@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "color-convert": "^2.0.1",
+    "delaunator": "^5.0.0",
+    "reset-css": "^5.0.2",
     "vue": "^3.3.4"
   },
   "devDependencies": {
