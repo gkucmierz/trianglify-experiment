@@ -4,6 +4,7 @@ import convert from 'color-convert';
 
 const px = n => `${n}px`;
 
+let ctx;
 const canvas = ref(null);
 const dots = ref(null);
 const size = ref(500);
@@ -42,10 +43,10 @@ const makeDraggable = (dots, pos, update) => {
     document.body.addEventListener('mousemove', e => {
       if (dragged < 0) return;
       setPos(dragged, [e.clientX+xd[dragged], e.clientY+yd[dragged]]);
+      update(pos);
     });
     document.body.addEventListener('mouseup', e => {
       dragged = -1;
-      update(pos);
     });
   });
   pos.map((xy, i) => setPos(i, xy));
@@ -60,36 +61,48 @@ const barycentricCoordinates = (p, a, b, c) => {
   return [l1, l2, l3];
 };
 
+const draw = () => {
+  drawFill();
+  drawStroke();
+};
+
+const drawFill = () => {
+  const imageData = ctx.createImageData(size.value, size.value);
+  const c = dotColors.value.map(c => convert.hex.rgb(c.val));
+
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const x = (i / 4) % size.value;
+    const y = (i / 4) / size.value | 0;
+    const bc = barycentricCoordinates([x, y], ...pos.value);
+    imageData.data[i + 0] = c[0][0] * bc[0] + c[1][0] * bc[1] + c[2][0] * bc[2];
+    imageData.data[i + 1] = c[0][1] * bc[0] + c[1][1] * bc[1] + c[2][1] * bc[2];
+    imageData.data[i + 2] = c[0][2] * bc[0] + c[1][2] * bc[1] + c[2][2] * bc[2];
+    imageData.data[i + 3] = 255; // A value
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+};
+
+const drawStroke = () => {
+  ctx.beginPath();
+  ctx.strokeStyle = 'black';
+  ctx.moveTo(...pos.value.at(-1));
+  pos.value.map(xy => ctx.lineTo(...xy));
+  ctx.stroke();
+};
+
+const clear = () => {
+  ctx.fillStyle = '#eee';
+  ctx.fillRect(0, 0, size.value, size.value);
+};
+
 onMounted(() => {
-  const ctx = canvas.value.getContext('2d');
-  const clear = () => {
-    ctx.fillStyle = '#eee';
-    ctx.fillRect(0, 0, size.value, size.value);
-  };
+  ctx = canvas.value.getContext('2d');
 
   makeDraggable([...dots.value.querySelectorAll('.dot')], pos.value, pos => {
     clear();
-    const imageData = ctx.createImageData(size.value, size.value);
-    const c = dotColors.value.map(c => convert.hex.rgb(c.val));
-
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      const x = (i / 4) % size.value;
-      const y = (i / 4) / size.value | 0;
-      const bc = barycentricCoordinates([x, y], ...pos);
-      imageData.data[i + 0] = c[0][0] * bc[0] + c[1][0] * bc[1] + c[2][0] * bc[2];
-      imageData.data[i + 1] = c[0][1] * bc[0] + c[1][1] * bc[1] + c[2][1] * bc[2];
-      imageData.data[i + 2] = c[0][2] * bc[0] + c[1][2] * bc[1] + c[2][2] * bc[2];
-      imageData.data[i + 3] = 255; // A value
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.moveTo(...pos.at(-1));
-    pos.map(xy => ctx.lineTo(...xy));
-    ctx.stroke();
+    drawStroke();
   });
-
 });
 
 </script>
@@ -100,6 +113,7 @@ onMounted(() => {
     <span v-for="color in dotColors">
       <input type="color" v-model="color.val" />
     </span>
+    <input type="button" value="Draw Triangle" @click="draw()"/>
     <pre>{{ JSON.stringify(pos, null, '  ') }}</pre>
     <div ref="dots">
       <div class="dot dot0"></div>
