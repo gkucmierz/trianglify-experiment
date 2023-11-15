@@ -34,20 +34,24 @@ const makeDraggable = (dots, pos, update) => {
   const xd = [];
   const yd = [];
   dots.map((dot, i) => {
-    dot.addEventListener('mousedown', e => {
+    const start = e => {
       dragged = i;
       const offset = getOffset(dot);
       xd[dragged] = offset.left - e.clientX;
       yd[dragged] = offset.top - e.clientY;
-    });
-    document.body.addEventListener('mousemove', e => {
+    };
+    const move = e => {
       if (dragged < 0) return;
       setPos(dragged, [e.clientX+xd[dragged], e.clientY+yd[dragged]]);
       update(pos);
-    });
-    document.body.addEventListener('mouseup', e => {
-      dragged = -1;
-    });
+    };
+    const end = e => dragged = -1;
+    dot.addEventListener('mousedown', start);
+    document.body.addEventListener('mousemove', move);
+    document.body.addEventListener('mouseup', end);
+    dot.addEventListener('touchstart', start);
+    document.body.addEventListener('touchmove', move);
+    document.body.addEventListener('touchend', end);
   });
   pos.map((xy, i) => setPos(i, xy));
   update(pos);
