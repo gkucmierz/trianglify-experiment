@@ -37,12 +37,16 @@ const makeDraggable = (dots, pos, update) => {
     const start = e => {
       dragged = i;
       const offset = getOffset(dot);
-      xd[dragged] = offset.left - e.clientX;
-      yd[dragged] = offset.top - e.clientY;
+      const x = e.clientX || e.changedTouches[0].clientX;
+      const y = e.clientY || e.changedTouches[0].clientY;
+      xd[dragged] = offset.left - x;
+      yd[dragged] = offset.top - y;
     };
     const move = e => {
       if (dragged < 0) return;
-      setPos(dragged, [e.clientX+xd[dragged], e.clientY+yd[dragged]]);
+      const x = e.clientX || e.changedTouches[0].clientX;
+      const y = e.clientY || e.changedTouches[0].clientY;
+      setPos(dragged, [x+xd[dragged], y+yd[dragged]]);
       update(pos);
     };
     const end = e => dragged = -1;
